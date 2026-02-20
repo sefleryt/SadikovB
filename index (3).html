@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duel Master Pro - Ultimate</title>
+    <link rel="icon" type="png,jpg" href="https://avatars.mds.yandex.net/i?id=7f571881169d93898b25dbc7f64805a11b02e0d5-5611576-images-thumbs&n=13">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;500;700&display=swap');
+
+        :root {
+            --bg-dark: #05070a;
+            --panel-glass: rgba(22, 27, 46, 0.85);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-gold: #ffd700;
+            --text-main: #ffffff;
+            --text-sec: #a0a8b8;
+            --correct: #00ff88;
+            --wrong: #ff2a2a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Matn belgilashni o'chirish */
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 243, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 85, 0.1) 0%, transparent 20%);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- ANIMATSIYALAR --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        @keyframes glowBorder { 0% { border-color: rgba(0, 243, 255, 0.3); } 50% { border-color: rgba(255, 0, 85, 0.3); } 100% { border-color: rgba(0, 243, 255, 0.3); } }
+
+        /* --- PROFIL PANELI (TEPA O'NG) --- */
+        .user-profile {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            animation: fadeIn 0.8s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: none; /* Login qilmaguncha ko'rinmaydi */
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-pink));
+            padding: 2px;
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #111;
+            object-fit: cover;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .user-name {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-main);
+            text-transform: capitalize;
+        }
+
+        .user-role {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .role-admin { color: var(--neon-gold); text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+        .role-user { color: var(--text-sec); }
+
+        /* --- ASOSIY OYNALAR (Glassmorphism) --- */
+        .screen-panel {
+            background: var(--panel-glass);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 40px;
+            width: 90%;
+            max-width: 500px; /* Default */
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.02);
+            backdrop-filter: blur(20px);
+            animation: fadeIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        /* Login Oynasi */
+        #auth-screen { text-align: center; }
+
+        /* Sozlamalar Oynasi */
+        #settings-screen {
+            max-width: 900px;
+            display: none;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #fff, var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+        
+        h1 .pro { color: var(--neon-pink); -webkit-text-fill-color: var(--neon-pink); }
+
+        h2 { font-size: 18px; color: var(--text-sec); margin-bottom: 30px; font-weight: 400; }
+
+        /* --- INPUTLAR VA SELECTLAR --- */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- TUGMALAR (NEON) --- */
+        .btn-neon {
+            width: 100%;
+            padding: 18px;
+            margin-top: 10px;
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+
+        .btn-neon::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-neon:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.6);
+            transform: scale(1.02);
+        }
+        
+        .btn-neon:hover::before { left: 100%; }
+
+        .btn-secondary {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.6);
+        }
+
+        /* --- O'YIN EKRANI --- */
+        #game-screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            flex-direction: column;
+            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
+        }
+
+        .hud-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 50px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .score-box { font-family: 'Orbitron', sans-serif; font-size: 30px; font-weight: 900; }
+        .p1-color { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+        .p2-color { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+
+        .timer-circle {
+            width: 80px; height: 80px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: 900;
+            border: 3px solid #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        .question-display {
+            font-size: 50px;
+            font-weight: 800;
+            text-align: center;
+            margin: 40px auto;
+            padding: 20px;
+            max-width: 800px;
+            animation: float 3s ease-in-out infinite;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .battle-arena {
+            display: flex;
+            flex: 1;
+            width: 100%;
+        }
+
+        .player-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .player-zone:last-child { border: none; }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .option-card {
+            width: 140px;
+            height: 100px;
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .p1-zone .option-card:hover { border-color: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); background: rgba(0, 243, 255, 0.1); }
+        .p2-zone .option-card:hover { border-color: var(--neon-pink); box-shadow: 0 0 15px var(--neon-pink); background: rgba(255, 0, 85, 0.1); }
+        
+        .option-card.correct { background: var(--correct) !important; color: #000; border-color: var(--correct); box-shadow: 0 0 30px var(--correct); transform: scale(1.1); z-index: 10; }
+        .option-card.wrong { background: var(--wrong) !important; border-color: var(--wrong); opacity: 0.4; transform: scale(0.9); }
+        .option-card:disabled { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); pointer-events: none;}
+
+        .key-badge {
+            position: absolute;
+            top: 5px; left: 5px;
+            font-size: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #aaa;
+        }
+
+        /* --- GRID LAYOUT SOZLAMALAR --- */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+
+        /* --- GAME OVER --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: #111;
+            border: 2px solid var(--neon-gold);
+            padding: 50px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+            animation: fadeIn 0.5s ease;
+        }
+        .winner-title { font-size: 40px; margin-bottom: 20px; color: var(--neon-gold); font-family: 'Orbitron'; text-transform: uppercase; }
+
+    </style>
+</head>
+<body>
+
+    <!-- USER PROFILE (TEPA O'NG) -->
+    <div class="user-profile" id="user-profile">
+        <div class="user-info">
+            <span class="user-name" id="profile-name">Mehmon</span>
+            <span class="user-role" id="profile-role">Foydalanuvchi</span>
+        </div>
+        <div class="user-avatar">
+            <img id="profile-img" src="" alt="Avatar">
+        </div>
+    </div>
+
+    <!-- 1. LOGIN EKRANI -->
+    <div id="auth-screen" class="screen-panel">
+        <h1>DUEL MASTER <span class="pro">PRO</span></h1>
+        <h2>Kiber Maydonga Kirish</h2>
+        
+        <div class="input-group">
+            <label>Login (Ismingiz)</label>
+            <input type="text" id="login-user" placeholder="Login...">
+        </div>
+        <div class="input-group">
+            <label>Parol</label>
+            <input type="password" id="login-pass" placeholder="********">
+        </div>
+
+        <button class="btn-neon" onclick="handleLogin()">Tizimga Kirish</button>
+        <button class="btn-neon btn-secondary" onclick="handleRegister()">Ro'yxatdan O'tish</button>
+        <p id="msg-box" style="margin-top:15px; font-size:12px; height:15px;"></p>
+    </div>
+
+    <!-- 2. SOZLAMALAR EKRANI -->
+    <div id="settings-screen" class="screen-panel">
+        <h1 style="text-align: center;">JANG SOZLAMALARI</h1>
+        <hr style="border: 0; height: 1px; background: rgba(255,255,255,0.1); margin: 20px 0;">
+
+        <div class="form-grid">
+            <div>
+                <div class="input-group">
+                    <label style="color: var(--neon-blue);">🔵 Chap O'yinchi</label>
+                    <input type="text" id="p1-name" value="Ali">
+                </div>
+                <div class="input-group">
+                    <label>Fan Tanlovi</label>
+                    <select id="subject">
+                        <option value="math">Matematika (Hisob-kitob)</option>
+                        <option value="ict">Informatika (IT)</option>
+                        <option value="logic">Mantiq (IQ)</option>
+                        <option value="english">Ingliz Tili (Lug'at)</option>
+                        <option value="history">Tarix (Sanalar)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Savollar Soni</label>
+                    <select id="q-count"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select>
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label style="color: var(--neon-pink);">🔴 O'ng O'yinchi</label>
+                    <input type="text" id="p2-name" value="Vali">
+                </div>
+                <div class="input-group">
+                    <label>Qiyinchilik / Sinf</label>
+                    <select id="grade">
+                        <option value="1">1 - Boshlang'ich</option>
+                        <option value="3">3 - O'rta</option>
+                        <option value="5">5 - Qiyin</option>
+                        <option value="7">7 - Professional</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Vaqt (Sekund)</label>
+                    <select id="time"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option></select>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-neon" onclick="startGame()">JANGNI BOSHLASH ⚔️</button>
+    </div>
+
+    <!-- 3. O'YIN MAYDONI -->
+    <div id="game-screen">
+        <div class="hud-bar">
+            <div class="score-box p1-color"><span id="hud-p1-name">P1</span>: <span id="hud-p1-score">0</span></div>
+            <div class="timer-circle" id="hud-timer">10</div>
+            <div class="score-box p2-color"><span id="hud-p2-name">P2</span>: <span id="hud-p2-score">0</span></div>
+        </div>
+
+        <div class="question-display" id="q-text">Loading...</div>
+
+        <div class="battle-arena">
+            <div class="player-zone p1-zone">
+                <div class="options-grid" id="p1-opts"></div>
+            </div>
+            <div class="player-zone p2-zone">
+                <div class="options-grid" id="p2-opts"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. GAME OVER MODAL -->
+    <div class="modal-overlay" id="end-modal">
+        <div class="modal-content">
+            <h2 class="winner-title" id="end-title">WINNER</h2>
+            <p id="end-score" style="color:#fff; font-size:20px; margin-bottom:30px;">Score</p>
+            <button class="btn-neon" onclick="location.reload()">Bosh Sahifa 🏠</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ADMIN LOGIN MA'LUMOTLARI ---
+        const ADMIN_USER = "sefler";
+        const ADMIN_PASS = "seflerytu";
+
+        // --- GLOBAL STATE ---
+        let currentUser = { name: "", role: "", avatar: "" };
+        let game = { 
+            active: false, p1S: 0, p2S: 0, qIdx: 0, 
+            timer: 10, interval: null, 
+            currQ: null, p1Lock: false, p2Lock: false 
+        };
+        
+        // --- AUDIO ENGINE ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            if (type === 'click') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.4); osc.start(); osc.stop(now + 0.4);
+            } else if (type === 'lose') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.3);
+            }
+        }
+
+        // --- AVTORIZATSIYA ---
+        function msg(txt, color='red') {
+            const m = document.getElementById('msg-box');
+            m.innerText = txt; m.style.color = color;
+        }
+
+        function handleRegister() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+            if(!u || !p) return msg("Maydonlarni to'ldiring!");
+            
+            if(u === ADMIN_USER) return msg("Bu nom band qilingan!");
+            
+            localStorage.setItem('user_' + u, p);
+            msg("Muvaffaqiyatli! Endi kiring.", varCSS('--correct'));
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+            
+            if(!u || !p) return msg("Maydonlarni to'ldiring!");
+
+            let role = "Foydalanuvchi";
+            let roleClass = "role-user";
+            let success = false;
+
+            // 1. ADMIN TEKSHIRUVI
+            if (u === ADMIN_USER && p === ADMIN_PASS) {
+                role = "Ega"; // Admin
+                roleClass = "role-admin";
+                success = true;
+            } 
+            // 2. ODDIY USER TEKSHIRUVI
+            else if (localStorage.getItem('user_' + u) === p) {
+                success = true;
+            }
+
+            if (success) {
+                currentUser.name = u;
+                currentUser.role = role;
+                // Random Avatar (DiceBear API)
+                currentUser.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${u}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+                
+                setupProfile(roleClass);
+                playTone('win');
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('settings-screen').style.display = 'block';
+                document.getElementById('p1-name').value = u; // Avtomatik ism
+            } else {
+                msg("Login yoki parol xato!");
+                playTone('lose');
+            }
+        }
+
+        function setupProfile(roleClass) {
+            const p = document.getElementById('user-profile');
+            document.getElementById('profile-name').innerText = currentUser.name;
+            const rEl = document.getElementById('profile-role');
+            rEl.innerText = currentUser.role;
+            rEl.className = "user-role " + roleClass;
+            document.getElementById('profile-img').src = currentUser.avatar;
+            
+            // Agar Admin (Ega) bo'lsa toj qo'shamiz
+            if(currentUser.role === "Ega") rEl.innerText += " 👑";
+            
+            p.style.display = 'flex';
+        }
+
+        function varCSS(name) { return getComputedStyle(document.documentElement).getPropertyValue(name); }
+
+        // --- O'YIN LOGIKASI (QISQARTIRILGAN) ---
+        // Savollar bazasi
+        const DB = {
+            ict: [{q:"CPU nima?", a:"Protsessor", o:["Xotira","Ekran","Sichqoncha"]}, {q:"HTML nima?", a:"Til", o:["O'yin","Brauzer","Wifi"]}],
+            logic: [{q:"Nimani ushlab bo'lmaydi?", a:"Soyani", o:["Suvni","Havoni","Olovni"]}, {q:"Yilda nechta oy bor?", a:"12", o:["10","24","7"]}],
+            english: [{q:"Red tarjimasi?", a:"Qizil", o:["Ko'k","Sariq","Oq"]}, {q:"Dog tarjimasi?", a:"It", o:["Mushuk","Ot","Sigir"]}],
+            history: [{q:"A.Temur tug'ilgan?", a:"1336", o:["1441","1991","1220"]}, {q:"Navoiy tug'ilgan?", a:"1441", o:["1500","1300","1400"]}]
+        };
+
+        function generateQ(subj, grade) {
+            if(subj === 'math') {
+                let n1 = Math.floor(Math.random()*10*grade)+1;
+                let n2 = Math.floor(Math.random()*10*grade)+1;
+                let ans = n1+n2;
+                let opts = [ans, ans+1, ans-1, ans+2].sort(()=>Math.random()-0.5);
+                return { t: `${n1} + ${n2} = ?`, a: ans, o: opts };
+            } else {
+                let pool = DB[subj] || DB.ict;
+                let q = pool[Math.floor(Math.random()*pool.length)];
+                let opts = [q.a, ...q.o].sort(()=>Math.random()-0.5);
+                return { t: q.q, a: q.a, o: opts };
+            }
+        }
+
+        function startGame() {
+            playTone('click');
+            game.p1N = document.getElementById('p1-name').value;
+            game.p2N = document.getElementById('p2-name').value;
+            game.subj = document.getElementById('subject').value;
+            game.grd = parseInt(document.getElementById('grade').value);
+            game.maxQ = parseInt(document.getElementById('q-count').value);
+            game.maxT = parseInt(document.getElementById('time').value);
+            
+            document.getElementById('settings-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            document.getElementById('user-profile').style.display = 'none'; // O'yinda profil kerak emas
+
+            document.getElementById('hud-p1-name').innerText = game.p1N;
+            document.getElementById('hud-p2-name').innerText = game.p2N;
+
+            nextRound();
+        }
+
+        function nextRound() {
+            if(game.qIdx >= game.maxQ) return showWinner();
+            
+            game.qIdx++;
+            game.currQ = generateQ(game.subj, game.grd);
+            game.p1Lock = false; game.p2Lock = false;
+            game.timer = game.maxT;
+            
+            clearInterval(game.interval);
+            document.getElementById('hud-timer').innerText = game.timer;
+            document.getElementById('q-text').innerText = game.currQ.t;
+            
+            renderBtns();
+            
+            game.interval = setInterval(() => {
+                game.timer--;
+                document.getElementById('hud-timer').innerText = game.timer;
+                if(game.timer <= 0) { playTone('lose'); nextRound(); }
+            }, 1000);
+        }
+
+        function renderBtns() {
+            const k1 = ['W','A','S','D']; const k2 = ['↑','←','↓','→'];
+            let h1 = '', h2 = '';
+            game.currQ.o.forEach((opt, i) => {
+                h1 += `<button class="option-card" id="p1-b-${i}" onclick="check(1, '${opt}', ${i})"><span class="key-badge">${k1[i]}</span>${opt}</button>`;
+                h2 += `<button class="option-card" id="p2-b-${i}" onclick="check(2, '${opt}', ${i})"><span class="key-badge">${k2[i]}</span>${opt}</button>`;
+            });
+            document.getElementById('p1-opts').innerHTML = h1;
+            document.getElementById('p2-opts').innerHTML = h2;
+        }
+
+        function check(p, val, idx) {
+            if((p===1 && game.p1Lock) || (p===2 && game.p2Lock)) return;
+            
+            let btn = document.getElementById(`p${p}-b-${idx}`);
+            let isTrue = (val == game.currQ.a); // yumshoq tenglik (matn/raqam)
+
+            if(isTrue) {
+                playTone('win');
+                btn.classList.add('correct');
+                if(p===1) { game.p1S++; document.getElementById('hud-p1-score').innerText = game.p1S; }
+                else { game.p2S++; document.getElementById('hud-p2-score').innerText = game.p2S; }
+                lockAll(); setTimeout(nextRound, 1000);
+            } else {
+                playTone('lose');
+                btn.classList.add('wrong');
+                btn.disabled = true;
+                if(p===1) { game.p1Lock = true; disableSide(1); }
+                else { game.p2Lock = true; disableSide(2); }
+                if(game.p1Lock && game.p2Lock) setTimeout(nextRound, 1000);
+            }
+        }
+
+        function disableSide(p) { for(let i=0; i<4; i++) document.getElementById(`p${p}-b-${i}`).disabled = true; }
+        function lockAll() { game.p1Lock=true; game.p2Lock=true; disableSide(1); disableSide(2); clearInterval(game.interval); }
+
+        function showWinner() {
+            clearInterval(game.interval);
+            let w = "DURANG!";
+            if(game.p1S > game.p2S) w = game.p1N + " YUTDI!";
+            if(game.p2S > game.p1S) w = game.p2N + " YUTDI!";
+            
+            document.getElementById('end-title').innerText = w;
+            document.getElementById('end-score').innerText = `${game.p1N}: ${game.p1S} - ${game.p2N}: ${game.p2S}`;
+            document.getElementById('end-modal').style.display = 'flex';
+        }
+
+        // Klaviatura
+        window.addEventListener('keydown', e => {
+            if(document.getElementById('game-screen').style.display !== 'flex') return;
+            const k = e.key.toLowerCase();
+            const map = {'w':0,'a':1,'s':2,'d':3, 'arrowup':0,'arrowleft':1,'arrowdown':2,'arrowright':3};
+            if(k in map) {
+                let p = k.startsWith('arrow') ? 2 : 1;
+                document.getElementById(`p${p}-b-${map[k]}`)?.click();
+            }
+        });
+    </script>
+</body>
+</html>
