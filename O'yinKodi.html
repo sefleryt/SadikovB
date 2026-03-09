@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Speedrun Obby: Hardcore</title>
+  <style>
+    :root{
+      --bg1:#0ea5e9;
+      --bg2:#8b5cf6;
+      --panel:rgba(255,255,255,.88);
+      --text:#0f172a;
+      --shadow:0 10px 24px rgba(15,23,42,.2);
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      width:100%;
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      font-family:Inter,system-ui,-apple-system,sans-serif;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      touch-action:none;
+    }
+
+    .app{
+      position:relative;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .topbar{
+      position:absolute;
+      top:12px;
+      left:12px;
+      right:12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:8px;
+      z-index:5;
+      pointer-events:none;
+    }
+
+    .hud{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      pointer-events:auto;
+    }
+
+    .chip{
+      background:var(--panel);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.6);
+      box-shadow:var(--shadow);
+      border-radius:12px;
+      padding:8px 12px;
+      font-weight:800;
+      font-size:14px;
+      backdrop-filter:blur(8px);
+      white-space:nowrap;
+    }
+
+    .chip.danger{ color:#dc2626; border-color:#fca5a5; }
+    .chip.success{ color:#16a34a; border-color:#86efac; }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      pointer-events:auto;
+    }
+
+    button{
+      border:none;
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:800;
+      font-size:14px;
+      color:#fff;
+      background:linear-gradient(180deg,#f97316,#ea580c);
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+    }
+
+    button:active{ transform:translateY(2px) scale(.96); }
+
+    .hint{
+      position:absolute;
+      left:50%;
+      bottom:100px;
+      transform:translateX(-50%);
+      width:max-content;
+      max-width:90vw;
+      text-align:center;
+      color:#fff;
+      background:rgba(0,0,0,.3);
+      border:1px solid rgba(255,255,255,.2);
+      backdrop-filter:blur(8px);
+      padding:10px 14px;
+      border-radius:16px;
+      z-index:4;
+      font-size:13px;
+      font-weight:500;
+      line-height:1.4;
+      text-shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+
+    .controls{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      padding:0 16px;
+      z-index:6;
+      pointer-events:none;
+    }
+
+    .move-group, .jump-group{
+      display:flex;
+      gap:12px;
+      pointer-events:auto;
+    }
+
+    .ctrl{
+      width:70px;
+      height:70px;
+      border-radius:20px;
+      display:grid;
+      place-items:center;
+      font-size:28px;
+      font-weight:900;
+      color:#1e293b;
+      background:rgba(255,255,255,.85);
+      border:2px solid rgba(255,255,255,.9);
+      box-shadow:var(--shadow);
+      user-select:none;
+    }
+
+    .ctrl.active{
+      transform:scale(.92);
+      background:rgba(226,232,240,.95);
+    }
+
+    .ctrl.jump{
+      color:#fff;
+      background:linear-gradient(180deg,#22c55e,#16a34a);
+      border-color:#4ade80;
+    }
+
+    .toast{
+      position:absolute;
+      top:80px;
+      left:50%;
+      transform:translate(-50%, -10px);
+      background:rgba(15,23,42,.9);
+      color:#fff;
+      padding:10px 18px;
+      border-radius:12px;
+      font-weight:700;
+      z-index:7;
+      opacity:0;
+      transition:.25s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events:none;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,.1);
+    }
+
+    .toast.show{
+      opacity:1;
+      transform:translate(-50%, 0);
+    }
+
+    .win-panel{
+      position:absolute;
+      inset:0;
+      display:none;
+      place-items:center;
+      background:rgba(15,23,42,.6);
+      backdrop-filter:blur(4px);
+      z-index:8;
+      padding:18px;
+    }
+
+    .win-panel.show{display:grid}
+
+    .win-card{
+      width:min(90vw,400px);
+      background:#fff;
+      color:var(--text);
+      border-radius:24px;
+      padding:28px 24px;
+      text-align:center;
+      box-shadow:0 25px 50px rgba(0,0,0,.3);
+    }
+
+    .win-card h2{ margin:0 0 16px; font-size:28px; color:#16a34a; }
+    
+    .stats{
+      background:#f1f5f9;
+      padding:16px;
+      border-radius:16px;
+      margin-bottom:20px;
+      display:grid;
+      gap:12px;
+      font-weight:700;
+      font-size:16px;
+    }
+
+    @media (max-width:700px){
+      .chip{font-size:12px;padding:7px 10px;}
+      button{font-size:12px;padding:9px 12px;}
+      .ctrl{width:60px;height:60px;font-size:24px;border-radius:16px;}
+      .hint{font-size:11px;bottom:85px;}
+    }
+    @media (max-height:500px){
+      .hint{display:none;}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="hud">
+        <div class="chip">⏱ <span id="timer">00:00.000</span></div>
+        <div class="chip success">CP: <span id="cpText">0/5</span></div>
+        <div class="chip danger">O'lim: <span id="deathText">0</span></div>
+      </div>
+      <div class="actions">
+        <button id="restartBtn">🔄 Qayta boshlash</button>
+      </div>
+    </div>
+
+    <div id="toast" class="toast">Checkpoint!</div>
+    <canvas id="game"></canvas>
+
+    <div class="hint">
+      🔥 Qizil lavadan qoching! 🟩 Yashil batutlar tepaga otadi.<br/>
+      ⏩ Konveyerlar orqali uzoqroqqa sakrang (Speedrun triki).
+    </div>
+
+    <div class="controls">
+      <div class="move-group">
+        <div class="ctrl" id="leftBtn">←</div>
+        <div class="ctrl" id="rightBtn">→</div>
+      </div>
+      <div class="jump-group">
+        <div class="ctrl jump" id="jumpBtn">⤒</div>
+      </div>
+    </div>
+
+    <div id="winPanel" class="win-panel">
+      <div class="win-card">
+        <h2>🏁 Ajoyib Natija!</h2>
+        <div class="stats">
+          <div>Sizning vaqtingiz: <span id="finalTime" style="color:#2563eb">00:00.000</span></div>
+          <div>Rekord vaqt: <span id="finalBest" style="color:#d97706">--:--.---</span></div>
+          <div>O'limlar soni: <span id="finalDeaths">0</span></div>
+        </div>
+        <button id="playAgainBtn" style="width:100%; padding:14px; font-size:16px;">Yangi Rekord Uchun Yana</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const ui = {
+      timer: document.getElementById('timer'),
+      cp: document.getElementById('cpText'),
+      deaths: document.getElementById('deathText'),
+      restart: document.getElementById('restartBtn'),
+      playAgain: document.getElementById('playAgainBtn'),
+      winPanel: document.getElementById('winPanel'),
+      finalTime: document.getElementById('finalTime'),
+      finalBest: document.getElementById('finalBest'),
+      finalDeaths: document.getElementById('finalDeaths'),
+      toast: document.getElementById('toast'),
+    };
+
+    const input = { left:false, right:false, jumpBuffer:0 };
+    
+    // O'yin dunyosi o'lchamlari
+    const baseY = 800;
+    const killY = 1300;
+    let platforms = [], checkpoints = [], goal = null;
+    let camera = { x: 0, y: 0 };
+
+    // Statistika
+    let bestTime = null;
+    let startTime = performance.now();
+    let finishTime = 0;
+    let finished = false;
+    let activeCp = -1;
+    let deaths = 0;
+    let respawnPt = { x: 40, y: baseY - 60 };
+    let lastTs = 0;
+
+    const player = {
+      x: 40, y: baseY - 60, w: 30, h: 42,
+      vx: 0, vy: 0, onGround: false, facing: 1
+    };
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function buildLevel() {
+      // Platforma turlari: normal, lava, bounce, conveyRight, conveyLeft
+      platforms = [
+        // Boshlang'ich hudud
+        { x: 0, y: baseY, w: 260, h: 100, type: 'normal', hue: 210 },
+        { x: 380, y: baseY - 20, w: 100, h: 20, type: 'normal', hue: 160 },
+        { x: 580, y: baseY - 60, w: 80, h: 20, type: 'normal', hue: 160 },
+        
+        // 1-CP va Lava zonasi
+        { x: 780, y: baseY - 80, w: 120, h: 20, type: 'normal', hue: 205 }, // CP 1 (820)
+        { x: 1000, y: baseY + 40, w: 450, h: 60, type: 'lava' }, // Katta lava
+        { x: 1050, y: baseY - 60, w: 60, h: 20, type: 'normal', hue: 45 },
+        { x: 1250, y: baseY - 100, w: 60, h: 20, type: 'normal', hue: 45 },
+
+        // 2-CP va Konveyerlar (Tezlik siri)
+        { x: 1520, y: baseY - 120, w: 120, h: 20, type: 'normal', hue: 205 }, // CP 2 (1560)
+        { x: 1750, y: baseY - 120, w: 220, h: 20, type: 'conveyLeft' }, // Orqaga tortadi
+        { x: 2100, y: baseY - 120, w: 220, h: 20, type: 'conveyRight' }, // Tezlik beradi (Uzoq sakrash uchun)
+
+        // 3-CP va Sakrash batutlari
+        { x: 2500, y: baseY - 120, w: 120, h: 20, type: 'normal', hue: 205 }, // CP 3 (2540)
+        { x: 2750, y: baseY - 60, w: 60, h: 24, type: 'bounce' }, // Batut 1
+        { x: 3000, y: baseY - 320, w: 60, h: 24, type: 'bounce' }, // Batut 2 (balandga)
+
+        // 4-CP va Vertikal ko'tarilish (Orqaga qaytish boshlanadi)
+        { x: 3250, y: baseY - 580, w: 120, h: 20, type: 'normal', hue: 205 }, // CP 4 (3290)
+        { x: 3100, y: baseY - 680, w: 50, h: 20, type: 'normal', hue: 280 }, // Chapga qarab
+        { x: 2900, y: baseY - 780, w: 50, h: 20, type: 'normal', hue: 280 },
+        { x: 2700, y: baseY - 880, w: 50, h: 20, type: 'normal', hue: 280 },
+
+        // 5-CP va Qiyin gauntlet (Tezlik+Batut)
+        { x: 2450, y: baseY - 880, w: 120, h: 20, type: 'normal', hue: 205 }, // CP 5 (2490)
+        { x: 2100, y: baseY - 880, w: 220, h: 20, type: 'conveyLeft' }, // Chapga tezlashtiradi
+        { x: 1750, y: baseY - 880, w: 60, h: 24, type: 'bounce' }, // Katta sakrash
+        
+        // Finish platformasi
+        { x: 1300, y: baseY - 1100, w: 250, h: 40, type: 'normal', hue: 50 } // Finish (1400)
+      ];
+
+      checkpoints = [
+        { x: 820, y: baseY - 80, w: 40, h: 90, active: false, rx: 820, ry: baseY - 80 - player.h },
+        { x: 1560, y: baseY - 120, w: 40, h: 90, active: false, rx: 1560, ry: baseY - 120 - player.h },
+        { x: 2540, y: baseY - 120, w: 40, h: 90, active: false, rx: 2540, ry: baseY - 120 - player.h },
+        { x: 3290, y: baseY - 580, w: 40, h: 90, active: false, rx: 3290, ry: baseY - 580 - player.h },
+        { x: 2490, y: baseY - 880, w: 40, h: 90, active: false, rx: 2490, ry: baseY - 880 - player.h }
+      ];
+
+      goal = { x: 1420, y: baseY - 1100, w: 80, h: 200 };
+    }
+
+    function formatTime(ms) {
+      if(ms < 0) ms = 0;
+      let m = Math.floor(ms / 60000), s = Math.floor((ms % 60000)/1000), mi = Math.floor(ms % 1000);
+      return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${mi.toString().padStart(3,'0')}`;
+    }
+
+    function showToast(msg) {
+      ui.toast.textContent = msg;
+      ui.toast.classList.add('show');
+      setTimeout(() => ui.toast.classList.remove('show'), 1500);
+    }
+
+    function updateHud() {
+      let t = finished ? finishTime - startTime : performance.now() - startTime;
+      ui.timer.textContent = formatTime(t);
+      ui.cp.textContent = `${activeCp + 1}/${checkpoints.length}`;
+      ui.deaths.textContent = deaths;
+    }
+
+    function restartFull() {
+      activeCp = -1;
+      deaths = 0;
+      checkpoints.forEach(c => c.active = false);
+      respawnPt = { x: 40, y: baseY - 100 };
+      finished = false;
+      startTime = performance.now();
+      ui.winPanel.classList.remove('show');
+      respawnPlayer();
+    }
+
+    function respawnPlayer() {
+      player.x = respawnPt.x;
+      player.y = respawnPt.y;
+      player.vx = 0;
+      player.vy = 0;
+      player.onGround = false;
+    }
+
+    function killPlayer() {
+      deaths++;
+      respawnPlayer();
+    }
+
+    function rectsOverlap(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function finishRun() {
+      if (finished) return;
+      finished = true;
+      finishTime = performance.now();
+      let t = finishTime - startTime;
+      if (!bestTime || t < bestTime) bestTime = t;
+      
+      ui.finalTime.textContent = formatTime(t);
+      ui.finalBest.textContent = formatTime(bestTime);
+      ui.finalDeaths.textContent = deaths;
+      ui.winPanel.classList.add('show');
+      showToast('🎉 Obby Tugatildi!');
+    }
+
+    function update(dt) {
+      if (finished) return;
+      let step = Math.min(2.5, dt / 16.66);
+
+      // Fizika parametrlari
+      const accel = player.onGround ? 0.9 : 0.6;
+      const friction = player.onGround ? 0.78 : 0.97;
+      const gravity = 0.75;
+      const maxSpeed = 5.8;
+      const jumpPower = -14.2;
+      const bouncePower = -22.5; // Batut kuchi
+
+      // Gorizontal harakat
+      if (input.left) { player.vx -= accel * step; player.facing = -1; }
+      if (input.right) { player.vx += accel * step; player.facing = 1; }
+      if (!input.left && !input.right) {
+        player.vx *= Math.pow(friction, step);
+        if (Math.abs(player.vx) < 0.1) player.vx = 0;
+      }
+      
+      // Havoda yoki oddiy blokda maxSpeed chegarasi
+      if (player.vx > maxSpeed * 1.5) player.vx = maxSpeed * 1.5; // Konveyer uchun biroz erkinlik
+      else if (player.vx < -maxSpeed * 1.5) player.vx = -maxSpeed * 1.5;
+      else if (Math.abs(player.vx) > maxSpeed && player.onGround) {
+        player.vx = player.vx > 0 ? maxSpeed : -maxSpeed;
+      }
+
+      // Sakrash
+      if (input.jumpBuffer > 0) input.jumpBuffer -= step;
+      if (input.jumpBuffer > 0 && player.onGround) {
+        player.vy = jumpPower;
+        player.onGround = false;
+        input.jumpBuffer = 0;
+      }
+
+      player.vy += gravity * step;
+      if (player.vy > 18) player.vy = 18;
+
+      let onConveyor = 0;
+
+      // X o'qi to'qnashuvi
+      player.x += player.vx * step;
+      for (let p of platforms) {
+        if (p.type === 'lava' && rectsOverlap(player, {x:p.x+2, y:p.y+8, w:p.w-4, h:p.h-8})) {
+          killPlayer(); return;
+        }
+        if (p.type !== 'lava' && rectsOverlap(player, p)) {
+          if (player.vx > 0) player.x = p.x - player.w;
+          else if (player.vx < 0) player.x = p.x + p.w;
+          player.vx = 0;
+        }
+      }
+
+      // Y o'qi to'qnashuvi
+      player.y += player.vy * step;
+      player.onGround = false;
+      for (let p of platforms) {
+        if (p.type !== 'lava' && rectsOverlap(player, p)) {
+          if (player.vy > 0 && player.y + player.h - player.vy * step <= p.y + 16) {
+            player.y = p.y - player.h;
+            if (p.type === 'bounce') {
+              player.vy = bouncePower; // Batutdan otilish
+              player.onGround = false;
+            } else {
+              player.vy = 0;
+              player.onGround = true;
+              if (p.type === 'conveyRight') onConveyor = 4;
+              if (p.type === 'conveyLeft') onConveyor = -4;
+            }
+          } else if (player.vy < 0 && player.y - player.vy * step >= p.y + p.h - 8) {
+            player.y = p.y + p.h;
+            player.vy = 0;
+          }
+        }
+      }
+
+      // Konveyer ta'siri
+      if (player.onGround && onConveyor !== 0) {
+        player.x += onConveyor * step;
+      }
+
+      // O'lim chegarasi
+      if (player.y > killY) killPlayer();
+
+      // Checkpointlarni tekshirish
+      checkpoints.forEach((cp, i) => {
+        if (i > activeCp && rectsOverlap(player, cp)) {
+          activeCp = i;
+          cp.active = true;
+          respawnPt = { x: cp.rx, y: cp.ry };
+          showToast(`Checkpoint ${i + 1} olindi!`);
+        }
+      });
+
+      // Finishni tekshirish
+      if (rectsOverlap(player, {x: goal.x - 20, y: goal.y - goal.h, w: goal.w, h: goal.h})) {
+        finishRun();
+      }
+
+      // Kamera harakati (silliq)
+      let targetCamX = player.x - canvas.width * 0.4;
+      let targetCamY = player.y - canvas.height * 0.6;
+      camera.x += (targetCamX - camera.x) * 0.12;
+      camera.y += (targetCamY - camera.y) * 0.12;
+      
+      // Kamera chegaralari
+      if (camera.y > baseY - canvas.height * 0.3) camera.y = baseY - canvas.height * 0.3;
+      
+      updateHud();
+    }
+
+    function drawRoundedRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+    }
+
+    function draw(ts) {
+      // Orqa fon paralaks
+      const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      sky.addColorStop(0, '#0ea5e9'); sky.addColorStop(1, '#a78bfa');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(-Math.floor(camera.x), -Math.floor(camera.y));
+
+      // Orqa fondagi bulutlar
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      for(let i = -5; i < 20; i++) {
+        let cx = i * 400 + (camera.x * 0.5 % 400);
+        ctx.beginPath();
+        ctx.arc(cx, baseY - 300, 60, 0, Math.PI*2);
+        ctx.arc(cx+50, baseY - 280, 50, 0, Math.PI*2);
+        ctx.arc(cx-50, baseY - 270, 40, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // Platformalarni chizish
+      platforms.forEach(p => {
+        if (p.type === 'normal') {
+          ctx.fillStyle = `hsl(${p.hue}, 85%, 60%)`;
+          drawRoundedRect(p.x, p.y, p.w, p.h, 6); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.fillRect(p.x+2, p.y+2, p.w-4, 6);
+        } 
+        else if (p.type === 'lava') {
+          ctx.fillStyle = '#ea580c';
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          for(let i=0; i<=p.w; i+=20) {
+            ctx.lineTo(p.x + i, p.y + Math.sin(ts*0.005 + i*0.1)*5 + 6);
+          }
+          ctx.lineTo(p.x+p.w, p.y+p.h); ctx.lineTo(p.x, p.y+p.h);
+          ctx.fill();
+        }
+        else if (p.type === 'bounce') {
+          ctx.fillStyle = '#4d7c0f';
+          drawRoundedRect(p.x, p.y+8, p.w, p.h-8, 4); ctx.fill();
+          ctx.fillStyle = '#84cc16'; // Batut yuzasi
+          drawRoundedRect(p.x, p.y, p.w, 12, 4); ctx.fill();
+          ctx.fillStyle = '#000'; // Chiziqlar
+          for(let i=4; i<p.w-8; i+=14) ctx.fillRect(p.x+i, p.y, 6, 12);
+        }
+        else if (p.type.startsWith('convey')) {
+          ctx.fillStyle = '#475569';
+          drawRoundedRect(p.x, p.y, p.w, p.h, 4); ctx.fill();
+          ctx.save();
+          ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip();
+          ctx.fillStyle = '#94a3b8';
+          let dir = p.type === 'conveyRight' ? 1 : -1;
+          let offset = (ts * 0.15 * dir) % 30;
+          for(let x = p.x - 30 + offset; x < p.x + p.w + 30; x+=30) {
+            ctx.beginPath();
+            ctx.moveTo(x, p.y+4); ctx.lineTo(x+(15*dir), p.y+p.h/2); ctx.lineTo(x, p.y+p.h-4);
+            ctx.lineTo(x+(8*dir), p.y+p.h-4); ctx.lineTo(x+(23*dir), p.y+p.h/2); ctx.lineTo(x+(8*dir), p.y+4);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      });
+
+      // Checkpointlar
+      checkpoints.forEach((cp, i) => {
+        ctx.fillStyle = cp.active ? '#22c55e' : '#94a3b8';
+        ctx.fillRect(cp.x + 16, cp.y, 8, cp.h); // Ustun
+        let pulse = cp.active ? Math.sin(ts*0.01)*0.4 + 0.6 : 0.2;
+        ctx.fillStyle = `rgba(${cp.active ? '34,197,94' : '255,255,255'}, ${pulse})`;
+        ctx.beginPath();
+        ctx.arc(cp.x + 20, cp.y + 10, 16, 0, Math.PI*2);
+        ctx.fill();
+      });
+
+      // Finish
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(goal.x + 36, goal.y - goal.h, 8, goal.h);
+      for(let r=0; r<4; r++) {
+        for(let c=0; c<5; c++) {
+          ctx.fillStyle = (r+c)%2===0 ? '#fff' : '#000';
+          ctx.fillRect(goal.x + 44 + c*12, goal.y - goal.h + 10 + r*12, 12, 12);
+        }
+      }
+
+      // O'yinchi
+      let px = player.x, py = player.y;
+      ctx.fillStyle = '#fbbf24'; // Sariq tana
+      drawRoundedRect(px, py, player.w, player.h, 8); ctx.fill();
+      ctx.fillStyle = '#f59e0b'; // Soya
+      drawRoundedRect(px, py+player.h-10, player.w, 10, 8); ctx.fill();
+      
+      // Ko'zlar va yuz
+      ctx.fillStyle = '#000';
+      let faceX = player.facing === 1 ? 4 : -4;
+      ctx.fillRect(px + 8 + faceX, py + 12, 4, 6);
+      ctx.fillRect(px + 18 + faceX, py + 12, 4, 6);
+      if(!player.onGround && player.vy < 0) {
+        ctx.fillRect(px + 11 + faceX, py + 26, 8, 6); // Sakrashda og'zi ochiladi
+      } else {
+        ctx.fillRect(px + 10 + faceX, py + 26, 10, 3); // Jiddiy speedrunner
+      }
+
+      ctx.restore();
+    }
+
+    function loop(ts) {
+      if (!lastTs) lastTs = ts;
+      let dt = ts - lastTs;
+      lastTs = ts;
+
+      update(dt);
+      draw(ts);
+      requestAnimationFrame(loop);
+    }
+
+    // Boshqaruv
+    function bindBtn(btn, onDown, onUp) {
+      const down = (e) => { e.preventDefault(); btn.classList.add('active'); onDown(); };
+      const up = (e) => { e.preventDefault(); btn.classList.remove('active'); onUp && onUp(); };
+      btn.addEventListener('pointerdown', down);
+      btn.addEventListener('pointerup', up);
+      btn.addEventListener('pointercancel', up);
+      btn.addEventListener('pointerleave', up);
+    }
+
+    bindBtn(document.getElementById('leftBtn'), () => input.left = true, () => input.left = false);
+    bindBtn(document.getElementById('rightBtn'), () => input.right = true, () => input.right = false);
+    bindBtn(document.getElementById('jumpBtn'), () => input.jumpBuffer = 12);
+
+    window.addEventListener('keydown', e => {
+      if(e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = true;
+      if(e.code === 'ArrowRight' || e.code === 'KeyD') input.right = true;
+      if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { input.jumpBuffer = 12; e.preventDefault(); }
+      if(e.code === 'KeyR') restartFull();
+    });
+    window.addEventListener('keyup', e => {
+      if(e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = false;
+      if(e.code === 'ArrowRight' || e.code === 'KeyD') input.right = false;
+    });
+
+    ui.restart.addEventListener('click', restartFull);
+    ui.playAgain.addEventListener('click', restartFull);
+    window.addEventListener('resize', resizeCanvas);
+
+    resizeCanvas();
+    buildLevel();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

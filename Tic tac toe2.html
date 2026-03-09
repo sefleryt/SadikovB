@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Tic Tac Toe Premium</title>
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#101935;
+      --bg3:#0f172a;
+      --glass:rgba(255,255,255,.11);
+      --glass-2:rgba(255,255,255,.08);
+      --line:rgba(255,255,255,.18);
+      --text:#eef6ff;
+      --muted:#b7c3de;
+      --x:#60a5fa;
+      --o:#f472b6;
+      --win:#fde68a;
+      --green:#34d399;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(96,165,250,.28), transparent 24%),
+        radial-gradient(circle at 82% 12%, rgba(244,114,182,.22), transparent 24%),
+        radial-gradient(circle at 50% 92%, rgba(52,211,153,.16), transparent 28%),
+        linear-gradient(135deg,var(--bg1),var(--bg2) 48%,var(--bg3));
+    }
+
+    body::before,
+    body::after{
+      content:"";
+      position:fixed;
+      inset:auto;
+      width:44vmax;
+      height:44vmax;
+      border-radius:50%;
+      filter:blur(55px);
+      opacity:.22;
+      pointer-events:none;
+      animation:floatBlob 16s ease-in-out infinite alternate;
+      z-index:0;
+    }
+    body::before{
+      left:-12vmax;
+      top:-10vmax;
+      background:radial-gradient(circle, rgba(96,165,250,.9), rgba(96,165,250,0));
+    }
+    body::after{
+      right:-10vmax;
+      bottom:-14vmax;
+      background:radial-gradient(circle, rgba(244,114,182,.85), rgba(244,114,182,0));
+      animation-duration:19s;
+    }
+
+    @keyframes floatBlob{
+      from{transform:translate3d(0,0,0) scale(1)}
+      to{transform:translate3d(3vmax,-2vmax,0) scale(1.08)}
+    }
+
+    #confetti{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      z-index:20;
+    }
+
+    .app{
+      position:relative;
+      z-index:1;
+      width:100%;
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding:14px;
+    }
+
+    .shell{
+      position:relative;
+      width:min(94vw,720px);
+      max-height:calc(100dvh - 28px);
+      border-radius:30px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.07));
+      backdrop-filter:blur(18px) saturate(135%);
+      box-shadow:var(--shadow);
+      display:flex;
+      flex-direction:column;
+    }
+
+    .shell::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.08), transparent 30%, transparent 70%, rgba(255,255,255,.06)),
+        linear-gradient(180deg, rgba(255,255,255,.05), transparent 20%);
+      pointer-events:none;
+    }
+
+    .topbar{
+      position:relative;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:18px 18px 8px;
+      z-index:1;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+
+    .logo{
+      width:48px;
+      height:48px;
+      display:grid;
+      place-items:center;
+      border-radius:16px;
+      background:linear-gradient(135deg, rgba(96,165,250,.35), rgba(244,114,182,.28));
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow:inset 0 1px rgba(255,255,255,.18);
+      font-weight:900;
+      font-size:21px;
+      letter-spacing:-1px;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:clamp(1.05rem, 2vw, 1.35rem);
+      line-height:1.1;
+      letter-spacing:.2px;
+    }
+
+    .brand p{
+      margin:3px 0 0;
+      color:var(--muted);
+      font-size:.9rem;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:46vw;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    button{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      font:inherit;
+    }
+
+    .ui-btn{
+      color:var(--text);
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:16px;
+      padding:11px 14px;
+      font-weight:800;
+      box-shadow:0 8px 18px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.08);
+      transition:transform .16s ease, background .2s ease, border-color .2s ease;
+      white-space:nowrap;
+    }
+
+    .ui-btn:hover{transform:translateY(-1px); background:rgba(255,255,255,.14)}
+    .ui-btn:active{transform:translateY(1px) scale(.98)}
+    .ui-btn.primary{
+      background:linear-gradient(135deg, rgba(96,165,250,.32), rgba(167,139,250,.3));
+      border-color:rgba(255,255,255,.2);
+    }
+    .ui-btn.muted{
+      opacity:.72;
+    }
+
+    .panel{
+      position:relative;
+      z-index:1;
+      padding:10px 18px 18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      overflow:auto;
+      min-height:0;
+    }
+
+    .meta{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .chip{
+      padding:10px 13px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:.9rem;
+      background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:inset 0 1px rgba(255,255,255,.08);
+    }
+
+    .chip.accent{
+      background:linear-gradient(135deg, rgba(96,165,250,.20), rgba(244,114,182,.18));
+    }
+
+    .status{
+      min-height:24px;
+      color:#f8fbff;
+      font-weight:700;
+      letter-spacing:.1px;
+      font-size:1rem;
+    }
+
+    .scoreboard{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+
+    .score{
+      padding:14px 12px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.14);
+      background:var(--glass-2);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      box-shadow:inset 0 1px rgba(255,255,255,.06);
+    }
+
+    .score .label{
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+
+    .score .value{
+      font-size:1.25rem;
+      font-weight:900;
+    }
+
+    .score.x .label{color:var(--x)}
+    .score.o .label{color:var(--o)}
+    .score.d .label{color:var(--win)}
+
+    .board-wrap{
+      position:relative;
+      width:min(100%, 460px);
+      margin:0 auto;
+      aspect-ratio:1/1;
+    }
+
+    .board{
+      position:absolute;
+      inset:0;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      padding:12px;
+      border-radius:28px;
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:
+        inset 0 1px rgba(255,255,255,.08),
+        0 12px 30px rgba(0,0,0,.18);
+      transition:box-shadow .25s ease, border-color .25s ease;
+    }
+
+    .board[data-turn="X"]{
+      box-shadow:
+        inset 0 1px rgba(255,255,255,.08),
+        0 0 0 1px rgba(96,165,250,.14),
+        0 12px 30px rgba(0,0,0,.18),
+        0 0 28px rgba(96,165,250,.10);
+    }
+
+    .board[data-turn="O"]{
+      box-shadow:
+        inset 0 1px rgba(255,255,255,.08),
+        0 0 0 1px rgba(244,114,182,.14),
+        0 12px 30px rgba(0,0,0,.18),
+        0 0 28px rgba(244,114,182,.12);
+    }
+
+    .board[data-turn="END"]{
+      box-shadow:
+        inset 0 1px rgba(255,255,255,.08),
+        0 0 0 1px rgba(253,230,138,.16),
+        0 12px 30px rgba(0,0,0,.18),
+        0 0 30px rgba(253,230,138,.12);
+    }
+
+    .cell{
+      position:relative;
+      display:grid;
+      place-items:center;
+      border-radius:24px;
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.09));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:
+        inset 0 1px rgba(255,255,255,.08),
+        0 10px 22px rgba(0,0,0,.14);
+      transition:transform .16s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+      overflow:hidden;
+      touch-action:manipulation;
+    }
+
+    .cell::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg, rgba(255,255,255,.09), transparent 50%);
+      opacity:.65;
+      pointer-events:none;
+    }
+
+    .cell:hover:not(.filled):not(:disabled){
+      transform:translateY(-2px) scale(1.015);
+      background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.11));
+      border-color:rgba(255,255,255,.18);
+    }
+
+    .cell:active:not(:disabled){
+      transform:scale(.98);
+    }
+
+    .cell.filled{cursor:default}
+    .cell:disabled{opacity:1}
+
+    .cell.winner{
+      background:linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.12));
+      border-color:rgba(255,255,255,.28);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.14),
+        0 0 26px rgba(253,230,138,.18),
+        0 0 52px rgba(255,255,255,.10);
+      animation:winnerPulse 1.15s ease-in-out infinite;
+    }
+
+    @keyframes winnerPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.02)}
+    }
+
+    .symbol{
+      width:72%;
+      height:72%;
+      animation:popIn .28s cubic-bezier(.2,.85,.25,1.2) both;
+      filter:drop-shadow(0 8px 18px rgba(0,0,0,.16));
+    }
+
+    .symbol.x line,
+    .symbol.o circle{
+      fill:none;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      vector-effect:non-scaling-stroke;
+    }
+
+    .symbol.x line{
+      stroke:var(--x);
+      stroke-width:10;
+      stroke-dasharray:80;
+      stroke-dashoffset:80;
+      animation:drawStroke .34s cubic-bezier(.25,.85,.3,1) forwards;
+    }
+
+    .symbol.x line:nth-child(2){
+      animation-delay:.08s;
+    }
+
+    .symbol.o circle{
+      stroke:var(--o);
+      stroke-width:10;
+      stroke-dasharray:240;
+      stroke-dashoffset:240;
+      animation:drawStroke .5s cubic-bezier(.25,.85,.3,1) forwards;
+    }
+
+    @keyframes popIn{
+      from{transform:scale(.55); opacity:0}
+      to{transform:scale(1); opacity:1}
+    }
+
+    @keyframes drawStroke{
+      to{stroke-dashoffset:0}
+    }
+
+    .win-line{
+      position:absolute;
+      left:0;
+      top:0;
+      height:10px;
+      width:0;
+      opacity:0;
+      border-radius:999px;
+      transform-origin:0 50%;
+      pointer-events:none;
+      background:linear-gradient(90deg, rgba(255,255,255,.15), #fde68a 25%, #fff 50%, #f9a8d4 75%, rgba(255,255,255,.15));
+      box-shadow:
+        0 0 22px rgba(255,255,255,.62),
+        0 0 36px rgba(244,114,182,.28);
+      transition:opacity .25s ease, width .28s ease;
+      z-index:5;
+    }
+
+    .win-line.show{opacity:1}
+
+    .thinking{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+      opacity:0;
+      transform:scale(.98);
+      transition:opacity .2s ease, transform .2s ease;
+      z-index:6;
+    }
+
+    .thinking.show{
+      opacity:1;
+      transform:scale(1);
+    }
+
+    .thinking-bubble{
+      padding:12px 16px;
+      border-radius:999px;
+      background:rgba(15,23,42,.76);
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:0 14px 30px rgba(0,0,0,.22);
+      font-weight:800;
+      backdrop-filter:blur(10px);
+    }
+
+    .thinking-bubble::after{
+      content:"...";
+      display:inline-block;
+      width:1.35em;
+      overflow:hidden;
+      vertical-align:bottom;
+      animation:dots 1s steps(4,end) infinite;
+    }
+
+    @keyframes dots{
+      0%{width:0}
+      100%{width:1.35em}
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+
+    .result{
+      overflow:hidden;
+      max-height:0;
+      opacity:0;
+      transform:translateY(6px);
+      transition:max-height .28s ease, opacity .22s ease, transform .22s ease;
+    }
+
+    .result.show{
+      max-height:130px;
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .result-card{
+      padding:14px 16px;
+      border-radius:22px;
+      background:rgba(255,255,255,.09);
+      border:1px solid rgba(255,255,255,.14);
+      text-align:center;
+    }
+
+    .result-title{
+      font-size:1.15rem;
+      font-weight:900;
+      margin-bottom:6px;
+    }
+
+    .result-text{
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      padding:18px;
+      background:rgba(2,6,23,.50);
+      backdrop-filter:blur(12px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .24s ease;
+      z-index:15;
+    }
+
+    .overlay.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    .menu-card{
+      width:min(92vw,500px);
+      padding:22px;
+      border-radius:28px;
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.09));
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:var(--shadow);
+      text-align:center;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.12);
+      font-size:.88rem;
+      font-weight:800;
+      color:#dbeafe;
+      margin-bottom:12px;
+    }
+
+    .menu-card h2{
+      margin:4px 0 8px;
+      font-size:clamp(1.7rem, 4vw, 2.3rem);
+      line-height:1.05;
+    }
+
+    .menu-card p{
+      margin:0 auto 18px;
+      max-width:42ch;
+      color:var(--muted);
+      font-weight:600;
+      line-height:1.45;
+    }
+
+    .mode-grid{
+      display:grid;
+      gap:12px;
+    }
+
+    .mode-btn{
+      width:100%;
+      text-align:left;
+      padding:16px 16px 15px;
+      border-radius:22px;
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.08));
+      border:1px solid rgba(255,255,255,.16);
+      color:var(--text);
+      box-shadow:0 14px 26px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.08);
+      transition:transform .18s ease, background .2s ease, border-color .2s ease;
+    }
+
+    .mode-btn:hover{
+      transform:translateY(-2px);
+      background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.10));
+      border-color:rgba(255,255,255,.22);
+    }
+
+    .mode-btn:active{
+      transform:scale(.985);
+    }
+
+    .mode-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:1.05rem;
+      font-weight:900;
+      margin-bottom:4px;
+    }
+
+    .mode-desc{
+      color:var(--muted);
+      font-weight:700;
+      font-size:.95rem;
+      line-height:1.35;
+    }
+
+    .note{
+      margin-top:14px;
+      color:var(--muted);
+      font-size:.88rem;
+      font-weight:700;
+    }
+
+    @media (max-width:640px){
+      .shell{
+        width:100vw;
+        max-height:100dvh;
+        border-radius:0;
+      }
+      .app{padding:0}
+      .topbar{padding:14px 14px 6px}
+      .panel{padding:8px 14px 14px}
+      .brand p{max-width:40vw}
+      .board{gap:10px;padding:10px}
+      .cell{border-radius:20px}
+      .scoreboard{gap:8px}
+      .score{padding:12px 10px;border-radius:18px}
+      .ui-btn{padding:10px 12px;border-radius:14px}
+    }
+
+    @media (max-height:680px){
+      .brand p{display:none}
+      .panel{gap:12px}
+      .score{padding:11px 10px}
+      .menu-card{padding:18px}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+
+  <div class="app">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo">✕◯</div>
+          <div>
+            <h1>Tic Tac Toe</h1>
+            <p>Glassmorphism, animatsiya va aqlli bot</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="ui-btn" id="soundBtn" type="button">🔊 Ovoz</button>
+          <button class="ui-btn" id="menuOpenBtn" type="button">☰ Menyu</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="meta">
+          <div class="chip" id="modeChip">Rejim tanlanmagan</div>
+          <div class="chip accent" id="turnChip">Navbat: —</div>
+        </div>
+
+        <div class="status" id="status">Boshlash uchun rejimni tanlang.</div>
+
+        <div class="scoreboard">
+          <div class="score x">
+            <div class="label">✕ X</div>
+            <div class="value" id="scoreX">0</div>
+          </div>
+          <div class="score d">
+            <div class="label">Teng</div>
+            <div class="value" id="scoreD">0</div>
+          </div>
+          <div class="score o">
+            <div class="label">◯ O</div>
+            <div class="value" id="scoreO">0</div>
+          </div>
+        </div>
+
+        <div class="board-wrap" id="boardWrap">
+          <div class="board" id="board" data-turn="X"></div>
+          <div class="win-line" id="winLine"></div>
+          <div class="thinking" id="thinking">
+            <div class="thinking-bubble">🤖 Bot o‘ylamoqda</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="ui-btn primary" id="restartBtn" type="button">↻ Yangi raund</button>
+          <button class="ui-btn" id="menuBtn" type="button">⌂ Menyu</button>
+        </div>
+
+        <div class="result" id="resultPanel">
+          <div class="result-card">
+            <div class="result-title" id="resultTitle"></div>
+            <div class="result-text" id="resultText"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay show" id="menuOverlay">
+        <div class="menu-card">
+          <div class="badge">🎮 Premium Tic Tac Toe</div>
+          <h2>X va O</h2>
+          <p>
+            Bitta HTML ichida zamonaviy dizayn, chizilib chiqadigan X/O,
+            aqlli AI bot, g‘olib qator glow effekti va konfetti bilan.
+          </p>
+
+          <div class="mode-grid">
+            <button class="mode-btn" data-mode="ai" type="button">
+              <div class="mode-title">🤖 1 kishilik</div>
+              <div class="mode-desc">AI bot bilan o‘ynang. Bot minimax bilan aqlli yuradi.</div>
+            </button>
+
+            <button class="mode-btn" data-mode="friend" type="button">
+              <div class="mode-title">👥 2 kishilik</div>
+              <div class="mode-desc">Bir qurilmada navbat bilan do‘stingiz bilan o‘ynang.</div>
+            </button>
+          </div>
+
+          <div class="note">Mobil va kompyuterga mos • Tashqi kutubxona ishlatilmagan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const boardEl = document.getElementById('board');
+    const boardWrapEl = document.getElementById('boardWrap');
+    const statusEl = document.getElementById('status');
+    const modeChipEl = document.getElementById('modeChip');
+    const turnChipEl = document.getElementById('turnChip');
+    const scoreXEl = document.getElementById('scoreX');
+    const scoreOEl = document.getElementById('scoreO');
+    const scoreDEl = document.getElementById('scoreD');
+    const resultPanelEl = document.getElementById('resultPanel');
+    const resultTitleEl = document.getElementById('resultTitle');
+    const resultTextEl = document.getElementById('resultText');
+    const menuOverlayEl = document.getElementById('menuOverlay');
+    const soundBtnEl = document.getElementById('soundBtn');
+    const restartBtnEl = document.getElementById('restartBtn');
+    const menuBtnEl = document.getElementById('menuBtn');
+    const menuOpenBtnEl = document.getElementById('menuOpenBtn');
+    const thinkingEl = document.getElementById('thinking');
+    const winLineEl = document.getElementById('winLine');
+
+    const confettiCanvas = document.getElementById('confetti');
+    const cctx = confettiCanvas.getContext('2d');
+
+    const WINS = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    const humanMark = 'X';
+    const aiMark = 'O';
+
+    const state = {
+      mode: null,
+      board: Array(9).fill(''),
+      current: 'X',
+      active: false,
+      thinking: false,
+      winner: null,
+      winCombo: null,
+      scores: { X: 0, O: 0, D: 0 }
+    };
+
+    let cells = [];
+    let soundOn = true;
+    let audioCtx = null;
+    let botTimer = null;
+    let confetti = [];
+
+    function createBoard() {
+      boardEl.innerHTML = '';
+      cells = [];
+      for (let i = 0; i < 9; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'cell';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', `${i + 1}-katak`);
+        btn.addEventListener('click', () => handleCellClick(i));
+        boardEl.appendChild(btn);
+        cells.push(btn);
+      }
+    }
+
+    function symbolSVG(mark) {
+      return mark === 'X'
+        ? `
+          <svg class="symbol x" viewBox="0 0 100 100" aria-hidden="true">
+            <line x1="24" y1="24" x2="76" y2="76"></line>
+            <line x1="76" y1="24" x2="24" y2="76"></line>
+          </svg>
+        `
+        : `
+          <svg class="symbol o" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="33"></circle>
+          </svg>
+        `;
+    }
+
+    function openMenu() {
+      clearBotTimer();
+      state.thinking = false;
+      thinkingEl.classList.remove('show');
+      menuOverlayEl.classList.add('show');
+      refreshUI();
+    }
+
+    function closeMenu() {
+      menuOverlayEl.classList.remove('show');
+    }
+
+    function resetScores() {
+      state.scores = { X: 0, O: 0, D: 0 };
+      updateScores();
+    }
+
+    function startMatch(mode) {
+      ensureAudio();
+      state.mode = mode;
+      resetScores();
+      closeMenu();
+      newRound();
+    }
+
+    function newRound() {
+      clearBotTimer();
+      state.board = Array(9).fill('');
+      state.current = 'X';
+      state.active = true;
+      state.thinking = false;
+      state.winner = null;
+      state.winCombo = null;
+      clearWinLine();
+      hideResult();
+      renderBoard();
+      refreshUI();
+    }
+
+    function handleCellClick(index) {
+      if (!state.active || state.thinking || state.board[index]) return;
+      ensureAudio();
+      placeMark(index, state.current);
+    }
+
+    function placeMark(index, mark) {
+      if (!state.active || state.board[index]) return;
+
+      state.board[index] = mark;
+      playMove(mark);
+      renderBoard();
+
+      const outcome = getOutcome(state.board);
+      if (outcome) {
+        finishRound(outcome);
+        return;
+      }
+
+      state.current = mark === 'X' ? 'O' : 'X';
+      refreshUI();
+
+      if (state.mode === 'ai' && state.current === aiMark) {
+        runBotTurn();
+      }
+    }
+
+    function runBotTurn() {
+      clearBotTimer();
+      state.thinking = true;
+      refreshUI();
+
+      botTimer = setTimeout(() => {
+        if (!state.active || state.current !== aiMark) return;
+        const move = bestMove(state.board.slice());
+        state.thinking = false;
+        refreshUI();
+        if (move != null) placeMark(move, aiMark);
+      }, 650 + Math.random() * 350);
+    }
+
+    function clearBotTimer() {
+      if (botTimer) {
+        clearTimeout(botTimer);
+        botTimer = null;
+      }
+    }
+
+    function getOutcome(board) {
+      for (const combo of WINS) {
+        const [a,b,c] = combo;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          return { type: 'win', winner: board[a], combo };
+        }
+      }
+      if (board.every(Boolean)) return { type: 'draw' };
+      return null;
+    }
+
+    function minimax(board, depth, isMaximizing) {
+      const result = getOutcome(board);
+      if (result) {
+        if (result.type === 'draw') return 0;
+        return result.winner === aiMark ? 10 - depth : depth - 10;
+      }
+
+      if (isMaximizing) {
+        let best = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!board[i]) {
+            board[i] = aiMark;
+            best = Math.max(best, minimax(board, depth + 1, false));
+            board[i] = '';
+          }
+        }
+        return best;
+      } else {
+        let best = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!board[i]) {
+            board[i] = humanMark;
+            best = Math.min(best, minimax(board, depth + 1, true));
+            board[i] = '';
+          }
+        }
+        return best;
+      }
+    }
+
+    function bestMove(board) {
+      let bestScore = -Infinity;
+      let moves = [];
+
+      for (let i = 0; i < 9; i++) {
+        if (!board[i]) {
+          board[i] = aiMark;
+          const score = minimax(board, 0, false);
+          board[i] = '';
+
+          if (score > bestScore) {
+            bestScore = score;
+            moves = [i];
+          } else if (score === bestScore) {
+            moves.push(i);
+          }
+        }
+      }
+
+      if (!moves.length) return null;
+
+      const preferred = [4,0,2,6,8,1,3,5,7];
+      for (const p of preferred) {
+        if (moves.includes(p)) return p;
+      }
+      return moves[0];
+    }
+
+    function finishRound(outcome) {
+      clearBotTimer();
+      state.active = false;
+      state.thinking = false;
+
+      if (outcome.type === 'draw') {
+        state.winner = 'draw';
+        state.scores.D += 1;
+        playDraw();
+        showResult('Durang 🤝', 'Yaxshi o‘yin bo‘ldi. Yana bir raund?');
+      } else {
+        state.winner = outcome.winner;
+        state.winCombo = outcome.combo;
+        state.scores[outcome.winner] += 1;
+        playWin();
+        launchConfetti();
+        renderBoard();
+        requestAnimationFrame(() => positionWinLine(outcome.combo));
+
+        if (state.mode === 'ai') {
+          if (outcome.winner === humanMark) {
+            showResult('Siz yutdingiz 🎉', 'Ajoyib! Botni yengdingiz.');
+          } else {
+            showResult('Bot yutdi 🤖', 'Yana bir urinish qilib ko‘ring.');
+          }
+        } else {
+          showResult(`${outcome.winner} g‘olib! 🏆`, 'Glow liniyaga qarang — chiroyli, to‘g‘rimi?');
+        }
+      }
+
+      updateScores();
+      refreshUI();
+    }
+
+    function updateScores() {
+      scoreXEl.textContent = state.scores.X;
+      scoreOEl.textContent = state.scores.O;
+      scoreDEl.textContent = state.scores.D;
+    }
+
+    function renderBoard() {
+      cells.forEach((cell, i) => {
+        const mark = state.board[i];
+        const isWinner = !!(state.winCombo && state.winCombo.includes(i));
+
+        cell.classList.toggle('filled', !!mark);
+        cell.classList.toggle('winner', isWinner);
+
+        if (mark && cell.dataset.mark !== mark) {
+          cell.innerHTML = symbolSVG(mark);
+          cell.dataset.mark = mark;
+        } else if (!mark && cell.dataset.mark) {
+          cell.innerHTML = '';
+          cell.dataset.mark = '';
+        }
+
+        cell.disabled = !state.active || state.thinking || !!mark;
+      });
+
+      boardEl.dataset.turn = state.active ? state.current : 'END';
+
+      if (!state.winCombo) clearWinLine();
+    }
+
+    function refreshUI() {
+      modeChipEl.textContent =
+        state.mode === 'ai' ? '1 kishilik • AI bot' :
+        state.mode === 'friend' ? '2 kishilik • Do‘st bilan' :
+        'Rejim tanlanmagan';
+
+      if (!state.mode) {
+        statusEl.textContent = 'Boshlash uchun rejimni tanlang.';
+        turnChipEl.textContent = 'Navbat: —';
+      } else if (!state.active) {
+        if (state.winner === 'draw') {
+          statusEl.textContent = 'Durang! Hech kim yutmadi.';
+          turnChipEl.textContent = 'Natija: Durang';
+        } else {
+          if (state.mode === 'ai') {
+            statusEl.textContent = state.winner === humanMark ? 'Siz g‘olib bo‘ldingiz!' : 'Bot g‘olib bo‘ldi.';
+          } else {
+            statusEl.textContent = `${state.winner} g‘olib bo‘ldi!`;
+          }
+          turnChipEl.textContent = `G‘olib: ${state.winner}`;
+        }
+      } else if (state.mode === 'ai') {
+        if (state.thinking) {
+          statusEl.textContent = 'Bot o‘ylamoqda...';
+        } else {
+          statusEl.textContent = state.current === humanMark
+            ? 'Sizning navbatingiz — X'
+            : 'Botning navbati — O';
+        }
+        turnChipEl.textContent = `Navbat: ${state.current}`;
+      } else {
+        statusEl.textContent = `Navbat ${state.current} da`;
+        turnChipEl.textContent = `Navbat: ${state.current}`;
+      }
+
+      thinkingEl.classList.toggle('show', !!state.thinking);
+      renderBoard();
+    }
+
+    function showResult(title, text) {
+      resultTitleEl.textContent = title;
+      resultTextEl.textContent = text;
+      resultPanelEl.classList.add('show');
+    }
+
+    function hideResult() {
+      resultPanelEl.classList.remove('show');
+    }
+
+    function clearWinLine() {
+      winLineEl.classList.remove('show');
+      winLineEl.style.width = '0px';
+      winLineEl.style.left = '0px';
+      winLineEl.style.top = '0px';
+      winLineEl.style.transform = 'rotate(0deg)';
+    }
+
+    function positionWinLine(combo) {
+      if (!combo || combo.length !== 3) return;
+      const startRect = cells[combo[0]].getBoundingClientRect();
+      const endRect = cells[combo[2]].getBoundingClientRect();
+      const wrapRect = boardWrapEl.getBoundingClientRect();
+
+      const x1 = startRect.left + startRect.width / 2 - wrapRect.left;
+      const y1 = startRect.top + startRect.height / 2 - wrapRect.top;
+      const x2 = endRect.left + endRect.width / 2 - wrapRect.left;
+      const y2 = endRect.top + endRect.height / 2 - wrapRect.top;
+
+      const length = Math.hypot(x2 - x1, y2 - y1);
+      const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+      winLineEl.style.left = `${x1}px`;
+      winLineEl.style.top = `${y1 - 5}px`;
+      winLineEl.style.width = `${length}px`;
+      winLineEl.style.transform = `rotate(${angle}deg)`;
+      winLineEl.classList.add('show');
+    }
+
+    function ensureAudio() {
+      if (!soundOn) return;
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        audioCtx = new Ctx();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function tone(freq, duration = 0.1, type = 'sine', when = 0, gain = 0.03) {
+      if (!soundOn) return;
+      ensureAudio();
+      if (!audioCtx) return;
+
+      const t = audioCtx.currentTime + when;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+
+      osc.start(t);
+      osc.stop(t + duration + 0.04);
+    }
+
+    function playMove(mark) {
+      if (mark === 'X') tone(392, 0.09, 'triangle', 0, 0.025);
+      else tone(523.25, 0.1, 'sine', 0, 0.024);
+    }
+
+    function playWin() {
+      tone(523.25, 0.11, 'triangle', 0.00, 0.030);
+      tone(659.25, 0.12, 'triangle', 0.08, 0.030);
+      tone(783.99, 0.18, 'triangle', 0.18, 0.035);
+    }
+
+    function playDraw() {
+      tone(330, 0.10, 'sine', 0.00, 0.022);
+      tone(294, 0.12, 'sine', 0.09, 0.020);
+      tone(262, 0.14, 'sine', 0.18, 0.019);
+    }
+
+    function updateSoundButton() {
+      soundBtnEl.textContent = soundOn ? '🔊 Ovoz' : '🔈 Ovoz o‘chiq';
+      soundBtnEl.classList.toggle('muted', !soundOn);
+    }
+
+    function resizeConfetti() {
+      const dpr = window.devicePixelRatio || 1;
+      confettiCanvas.width = Math.floor(window.innerWidth * dpr);
+      confettiCanvas.height = Math.floor(window.innerHeight * dpr);
+      confettiCanvas.style.width = window.innerWidth + 'px';
+      confettiCanvas.style.height = window.innerHeight + 'px';
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      if (state.winCombo) {
+        requestAnimationFrame(() => positionWinLine(state.winCombo));
+      }
+    }
+
+    function launchConfetti() {
+      const colors = ['#60a5fa', '#f472b6', '#fde68a', '#34d399', '#ffffff', '#a78bfa'];
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      for (let i = 0; i < 180; i++) {
+        confetti.push({
+          x: Math.random() * width,
+          y: -20 - Math.random() * height * 0.25,
+          vx: -2.8 + Math.random() * 5.6,
+          vy: 1.4 + Math.random() * 2.8,
+          g: 0.045 + Math.random() * 0.05,
+          size: 5 + Math.random() * 8,
+          rot: Math.random() * Math.PI * 2,
+          vr: -0.25 + Math.random() * 0.5,
+          sway: Math.random() * Math.PI * 2,
+          alpha: 0.8 + Math.random() * 0.2,
+          color: colors[(Math.random() * colors.length) | 0],
+          life: 110 + Math.random() * 40,
+          shape: Math.random() < 0.6 ? 'rect' : 'circle'
+        });
+      }
+    }
+
+    function animateConfetti() {
+      cctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+      for (let i = confetti.length - 1; i >= 0; i--) {
+        const p = confetti[i];
+        p.life -= 1;
+        p.vy += p.g;
+        p.x += p.vx + Math.sin(p.sway += 0.08) * 0.5;
+        p.y += p.vy;
+        p.rot += p.vr;
+
+        if (p.life <= 0 || p.y > window.innerHeight + 30) {
+          confetti.splice(i, 1);
+          continue;
+        }
+
+        cctx.save();
+        cctx.globalAlpha = Math.max(0, p.alpha * (p.life / 140));
+        cctx.translate(p.x, p.y);
+        cctx.rotate(p.rot);
+        cctx.fillStyle = p.color;
+
+        if (p.shape === 'rect') {
+          cctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.7);
+        } else {
+          cctx.beginPath();
+          cctx.arc(0, 0, p.size * 0.45, 0, Math.PI * 2);
+          cctx.fill();
+        }
+        cctx.restore();
+      }
+
+      requestAnimationFrame(animateConfetti);
+    }
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => startMatch(btn.dataset.mode));
+    });
+
+    soundBtnEl.addEventListener('click', () => {
+      soundOn = !soundOn;
+      if (soundOn) ensureAudio();
+      updateSoundButton();
+    });
+
+    restartBtnEl.addEventListener('click', () => {
+      ensureAudio();
+      if (!state.mode) {
+        openMenu();
+      } else {
+        newRound();
+      }
+    });
+
+    menuBtnEl.addEventListener('click', openMenu);
+    menuOpenBtnEl.addEventListener('click', openMenu);
+
+    window.addEventListener('resize', resizeConfetti);
+
+    createBoard();
+    updateScores();
+    updateSoundButton();
+    refreshUI();
+    resizeConfetti();
+    animateConfetti();
+  </script>
+</body>
+</html>
